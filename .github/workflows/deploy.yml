@@ -33,7 +33,7 @@ jobs:
         run: |
           if [ -f "src/type.ts" ]; then mv src/type.ts src/types.ts; fi
           npm install --no-save typescript
-          npx tsc src/*.ts --outDir dist --target ES2020 --module ES2020 --skipLibCheck --ignoreConfig
+          npx tsc src/*.ts --outDir dist --target ES2022 --module ES2022 --noImplicitAny false --skipLibCheck --ignoreConfig
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
