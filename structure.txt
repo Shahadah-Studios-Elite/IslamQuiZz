@@ -1,0 +1,13 @@
+islam-quizz/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml       
+├── src/
+│   ├── types.ts             
+│   ├── presets.ts           
+│   ├── game.ts              
+│   └── main.ts              
+├── index.html               
+├── style.css                
+├── tsconfig.json            
+└── CNAME     - When a cutom domain is fit               
