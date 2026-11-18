@@ -1,9 +1,10 @@
-import { QuizDeck } from "./types.js";
+import { QuizDeck, QuizQuestion } from "./types.js";
 
 const SHAPE_ICONS = ["▲", "◆", "●", "■"];
 
 export class QuizGameEngine {
-    private activeDeck: QuizDeck | null = null;
+    private rawDeck: QuizDeck | null = null;
+    private questions: QuizQuestion[] = [];
     private currentIdx = 0;
     private score = 0;
     private streak = 0;
@@ -17,7 +18,8 @@ export class QuizGameEngine {
     }
 
     public start(deck: QuizDeck): void {
-        this.activeDeck = deck;
+        this.rawDeck = deck;
+        this.questions = this.shuffleDeck(deck.questions);
         this.currentIdx = 0;
         this.score = 0;
         this.streak = 0;
@@ -32,8 +34,8 @@ export class QuizGameEngine {
     }
 
     public restart(): void {
-        if (this.activeDeck) {
-            this.start(this.activeDeck);
+        if (this.rawDeck) {
+            this.start(this.rawDeck);
         }
     }
 
@@ -44,15 +46,46 @@ export class QuizGameEngine {
         }
     }
 
+    private shuffleDeck(source: QuizQuestion[]): QuizQuestion[] {
+        const shuffledQuestions = source.map(q => {
+            const items = q.choices.map((text, idx) => ({
+                text,
+                isCorrect: idx === q.correctIndex
+            }));
+
+            for (let i = items.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const temp = items.at(i)!;
+                items[i] = items.at(j)!;
+                items[j] = temp;
+            }
+
+            return {
+                prompt: q.prompt,
+                choices: items.map(item => item.text),
+                correctIndex: items.findIndex(item => item.isCorrect),
+                explanation: q.explanation
+            };
+        });
+
+        for (let i = shuffledQuestions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = shuffledQuestions.at(i)!;
+            shuffledQuestions[i] = shuffledQuestions.at(j)!;
+            shuffledQuestions[j] = temp;
+        }
+
+        return shuffledQuestions;
+    }
+
     private loadQuestion(): void {
-        if (!this.activeDeck) return;
-        if (this.currentIdx >= this.activeDeck.questions.length) {
+        if (this.currentIdx >= this.questions.length) {
             this.endGame();
             return;
         }
 
-        const q = this.activeDeck.questions.at(this.currentIdx)!;
-        document.getElementById("game-progress")!.textContent = `Question ${this.currentIdx + 1} / ${this.activeDeck.questions.length}`;
+        const q = this.questions.at(this.currentIdx)!;
+        document.getElementById("game-progress")!.textContent = `Question ${this.currentIdx + 1} / ${this.questions.length}`;
         document.getElementById("game-score")!.textContent = `🪙 ${this.score}`;
         document.getElementById("game-streak")!.textContent = `🔥 ${this.streak}x`;
         document.getElementById("question-prompt")!.textContent = q.prompt;
@@ -94,9 +127,7 @@ export class QuizGameEngine {
 
     private handleAnswer(selectedIdx: number): void {
         this.stopTimer();
-        if (!this.activeDeck) return;
-
-        const q = this.activeDeck.questions.at(this.currentIdx)!;
+        const q = this.questions.at(this.currentIdx)!;
         const isCorrect = selectedIdx === q.correctIndex;
 
         const overlay = document.getElementById("feedback-overlay")!;
@@ -138,7 +169,7 @@ export class QuizGameEngine {
         setTimeout(() => this.playTone(659.25, "triangle", 0.15), 120);
         setTimeout(() => this.playTone(783.99, "triangle", 0.3), 240);
 
-        document.getElementById("final-deck-title")!.textContent = this.activeDeck?.title || "Quiz Complete";
+        document.getElementById("final-deck-title")!.textContent = this.rawDeck?.title || "Quiz Complete";
         document.getElementById("final-score")!.textContent = `${this.score}`;
         document.getElementById("final-streak")!.textContent = `${this.bestStreak}x`;
     }
